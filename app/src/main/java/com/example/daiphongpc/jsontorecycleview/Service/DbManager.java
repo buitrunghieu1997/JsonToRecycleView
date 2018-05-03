@@ -48,8 +48,8 @@ public class DbManager extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        String sqlQuery = "CREATE TABLE " + TABLE_NAME + " (" +
-                ID + "integer primary key, " +
+        String sqlQuery = "CREATE TABLE " + TABLE_NAME + "(" +
+                ID + " INTEGER PRIMARY KEY, " +
                 NAME + " TEXT, " +
                 USERNAME + " TEXT, " +
                 EMAIL + " TEXT, " +
@@ -63,10 +63,10 @@ public class DbManager extends SQLiteOpenHelper {
                 WEBSITE + " TEXT, " +
                 COMPANYNAME + " TEXT, " +
                 CATCHPHRASE + " TEXT, " +
-                BS + " TEXT)";
+                BS + " TEXT);";
 
         db.execSQL(sqlQuery);
-        Toast.makeText(context, "Create successfully", Toast.LENGTH_SHORT).show();
+        //Toast.makeText(context, "Create successfully", Toast.LENGTH_SHORT).show();
     }
 
     @Override
@@ -97,7 +97,7 @@ public class DbManager extends SQLiteOpenHelper {
         values.put(BS, user.getCompany().getBs());
 
         db.insert(TABLE_NAME, null, values); //để như thế này thì null sẽ bị lỗi
-
+        
         db.close();
     }
 
@@ -114,29 +114,29 @@ public class DbManager extends SQLiteOpenHelper {
             cursor.moveToFirst();
 
         Geo geo = new Geo(
-                cursor.getString(9),
-                cursor.getString(10));
+                cursor.getString(8),
+                cursor.getString(9));
 
         Company company = new Company(
+                cursor.getString(12),
                 cursor.getString(13),
-                cursor.getString(14),
-                cursor.getString(15));
+                cursor.getString(14));
 
         Address address = new Address(
+                cursor.getString(4),
                 cursor.getString(5),
                 cursor.getString(6),
                 cursor.getString(7),
-                cursor.getString(8),
                 geo);
 
         User user = new User(
-                Integer.parseInt(cursor.getString(1)),
+                Integer.parseInt(cursor.getString(0)),
+                cursor.getString(1),
                 cursor.getString(2),
                 cursor.getString(3),
-                cursor.getString(4),
                 address,
+                cursor.getString(10),
                 cursor.getString(11),
-                cursor.getString(12),
                 company);
 
         cursor.close();
@@ -180,29 +180,29 @@ public class DbManager extends SQLiteOpenHelper {
         if (cursor.moveToFirst()) {
             do {
                 Geo geo = new Geo(
-                        cursor.getString(9),
-                        cursor.getString(10));
+                        cursor.getString(8),
+                        cursor.getString(9));
 
                 Company company = new Company(
+                        cursor.getString(12),
                         cursor.getString(13),
-                        cursor.getString(14),
-                        cursor.getString(15));
+                        cursor.getString(14));
 
                 Address address = new Address(
+                        cursor.getString(4),
                         cursor.getString(5),
                         cursor.getString(6),
                         cursor.getString(7),
-                        cursor.getString(8),
                         geo);
 
                 User user = new User(
-                        Integer.parseInt(cursor.getString(1)),
+                        Integer.parseInt(cursor.getString(0)),
+                        cursor.getString(1),
                         cursor.getString(2),
                         cursor.getString(3),
-                        cursor.getString(4),
                         address,
+                        cursor.getString(10),
                         cursor.getString(11),
-                        cursor.getString(12),
                         company);
 
                 userList.add(user);
@@ -227,8 +227,9 @@ public class DbManager extends SQLiteOpenHelper {
         String countQuery = "SELECT * FROM " + TABLE_NAME; //Có thể dùng select count(*) from...
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = db.rawQuery(countQuery, null);
+        int count = cursor.getCount();
         cursor.close();
 
-        return cursor.getCount();
+        return count;
  }
 }

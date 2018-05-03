@@ -5,6 +5,7 @@ import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import android.os.Build;
 import android.support.annotation.RequiresApi;
 import android.support.v7.app.AppCompatActivity;
@@ -24,7 +25,9 @@ import com.example.daiphongpc.jsontorecycleview.Model.Geo;
 import com.example.daiphongpc.jsontorecycleview.Model.User;
 import com.example.daiphongpc.jsontorecycleview.R;
 import com.example.daiphongpc.jsontorecycleview.Service.API;
+import com.example.daiphongpc.jsontorecycleview.Service.DbManager;
 
+import java.io.IOException;
 import java.util.List;
 
 import retrofit2.Call;
@@ -35,8 +38,6 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 
 public class MainActivity extends AppCompatActivity {
-
-    SQLiteDatabase db;
 
     public static final String ROOT_URL = "https://jsonplaceholder.typicode.com/";
 
@@ -61,11 +62,11 @@ public class MainActivity extends AppCompatActivity {
     public static String DATA_CATCH_PHRASE = "data_catch_pharse";
     public static String DATA_BS = "data_bs";
 
+    final DbManager manager = new DbManager(MainActivity.this);
+
     List<User> userList;
 
     private ListView listView;
-
-    private TextView txtMsg;
 
     public MainActivity() {
     }
@@ -78,12 +79,18 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         listView = (ListView) this.findViewById(R.id.list_item);
-        txtMsg = (TextView) this.findViewById(R.id.empty);
 
-        getData();
+        try {
+            getData();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.N) //require nougat
+    /*@RequiresApi(api = Build.VERSION_CODES.N) //require nougat
     private void showDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this); //có thể dùng view.getContext(), this.getBaseContext() or getApplicationContext() (k nên dễ lỗi)
         builder.setCancelable(false); //k thể hủy khi ấn ra ngoài
@@ -101,10 +108,9 @@ public class MainActivity extends AppCompatActivity {
 
         AlertDialog alertDialog = builder.create();
         alertDialog.show();
-    }
+    }*/
 
-    public void getData() {
-        final ProgressDialog loading = ProgressDialog.show(this, "Fetching Data", "Please wait...", false, false);
+    public void getData() throws IOException, InterruptedException {
 
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(ROOT_URL)
@@ -113,58 +119,51 @@ public class MainActivity extends AppCompatActivity {
 
         //API api = Client.getClient().create(API.class);
         API api = retrofit.create(API.class);
-        Call<List<User>> call = api.getListUser();
 
-        call.enqueue(new Callback<List<User>>() {
-            @Override
-            public void onResponse(Call<List<User>> call, Response<List<User>> response) {
-                Log.d(TAG, "OnResponse: Sever Response: " + response.toString());
-                Log.d(TAG, "OnResponse: Recieved Information: " + response.body().toString());
+        if (isConnected()) {
+            Call<List<User>> call = api.getListUser();
 
-                userList = response.body();
+            call.enqueue(new Callback<List<User>>() {
+                @Override
+                public void onResponse(Call<List<User>> call, Response<List<User>> response) {
 
-                loading.dismiss();
+                    userList = response.body();
 
-                for (int i = 0; i < userList.size(); i++) {
-                    Log.d(TAG, "OnResponse \n" +
-                            "Id: " + userList.get(i).getId() + "\n" +
-                            "Name: " + userList.get(i).getName() + "\n" +
-                            "UserName: " + userList.get(i).getUsername() + "\n" +
-                            "Email: " + userList.get(i).getEmail() + "\n" +
-                            "ADDRESS: " + "\n\t" +
-                            "Street: " + userList.get(i).getAddress().getStreet() + "\n\t" +
-                            "Suite: " + userList.get(i).getAddress().getSuite() + "\n\t" +
-                            "City: " + userList.get(i).getAddress().getCity() + "\n\t" +
-                            "Zip Code: " + userList.get(i).getAddress().getZipcode() + "\n\t" +
-                            "GEO: " + "\n\t\t" +
-                            "Lat: " + userList.get(i).getAddress().getGeo().getLat() + "\n\t\t" +
-                            "Lng: " + userList.get(i).getAddress().getGeo().getLng() + "\n" +
-                            "Phone: " + userList.get(i).getPhone() + "\n" +
-                            "Website: " + userList.get(i).getWebsite() + "\n" +
-                            "COMPANY: " + "\n\t" +
-                            "Company Name: " + userList.get(i).getCompany().getName() + "\n\t" +
-                            "Catch Phrase: " + userList.get(i).getCompany().getCatchPharse() + "\n\t" +
-                            "Bs: " + userList.get(i).getCompany().getBs() + "\n" +
-                            "------------------------------------------------------------------\n\n");
+                    for (int i = 0; i < userList.size(); i++) {
+                        manager.addUser(userList.get(i));
+                    }
+                    showDialog("Loading from Internet", "Please wait! The application is connecting to the host.");
+                    showList(userList);
                 }
-                showList(userList);
-            }
 
-            @Override
-            public void onFailure(Call<List<User>> call, Throwable t) {
-                Log.d(TAG, "OnFailure: Something went Wrong: " + t.getMessage());
-                Toast.makeText(MainActivity.this, "Something went wrong" + t.getMessage(), Toast.LENGTH_LONG).show();
-
+                @Override
+                public void onFailure(Call<List<User>> call, Throwable t) {
+                    Toast.makeText(MainActivity.this, "Network Error, Load from database," +
+                            " if the screen is blank, It means that the database is empty, try to make" +
+                            "Your network available: " + t.getMessage(), Toast.LENGTH_LONG).show();
+                }
+            });
+        } else {
+            try {
+                userList = manager.getAllUser();
+                showDialog("No Internet connection, Loading from Database",
+                        "Loading from Database, If the screen is blank," +
+                                " It means that the Database is empty, try to connect" +
+                                " to a stable network.");
+                showList(manager.getAllUser());
+            } catch (SQLiteException el) {
+                Toast.makeText(MainActivity.this, "SQL Exception: " + el.toString(), Toast.LENGTH_SHORT);
             }
-        });
+        }
     }
 
     @RequiresApi(api = Build.VERSION_CODES.N) //require nougat
-    private void showErrorDialog() {
+    private void showDialog(String tilte, String content) {
         AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this); //có thể dùng view.getContext(), this.getBaseContext() or getApplicationContext() (k nên dễ lỗi)
         builder.setCancelable(false); //k thể hủy khi ấn ra ngoài
 
-        builder.setMessage("Error");
+        builder.setTitle(tilte);
+        builder.setMessage(content);
         builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
@@ -182,7 +181,6 @@ public class MainActivity extends AppCompatActivity {
 
         for (int i = 0; i < list.size(); ++i) {
             listName[i] = list.get(i).getName();
-            Log.d("List name: ", listName[i] + "\n");
         }
 
         ArrayAdapter adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, listName); //R.layout.item file custom layout do nguoi dung tu tao
@@ -211,10 +209,17 @@ public class MainActivity extends AppCompatActivity {
                 intent.putExtra(DATA_CATCH_PHRASE, user.getCompany().getCatchPharse());
                 intent.putExtra(DATA_BS, user.getCompany().getBs());
 
-                Log.d("Data: \n", DATA_LAT);
-
                 MainActivity.this.startActivity(intent);
             }
         });
+    }
+
+    public List<User> getListFromDb() {
+        return manager.getAllUser();
+    }
+
+    public boolean isConnected() throws InterruptedException, IOException {
+        String command = "ping -c 1 google.com";
+        return (Runtime.getRuntime().exec(command).waitFor() == 0);
     }
 }
