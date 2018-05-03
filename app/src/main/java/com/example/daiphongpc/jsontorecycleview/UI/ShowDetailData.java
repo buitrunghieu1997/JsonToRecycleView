@@ -35,6 +35,7 @@ public class ShowDetailData extends AppCompatActivity {
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.detail_item);
+        getSupportActionBar().hide();
 
         data_id = (TextView) findViewById(R.id.id);
         data_name = (TextView) findViewById(R.id.name);

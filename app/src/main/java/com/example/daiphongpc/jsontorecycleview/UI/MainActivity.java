@@ -47,17 +47,14 @@ public class MainActivity extends AppCompatActivity {
     public static String DATA_NAME = "data_name";
     public static String DATA_USERNAME = "data_username";
     public static String DATA_EMAIL = "data_email";
-    public static Address DATA_ADDRESS;
     public static String DATA_STREET = "data_street";
     public static String DATA_SUITE = "data_suite";
     public static String DATA_CITY = "data_city";
     public static String DATA_ZIPCODE = "data_zipcode";
-    public static Geo DATA_GEO;
     public static String DATA_LAT = "data_lat";
     public static String DATA_LNG = "data_lng";
     public static String DATA_PHONE = "data_phone";
     public static String DATA_WEBSITE = "data_website";
-    public static Company DATA_COMPANY;
     public static String DATA_COMPANY_NAME = "data_company_name";
     public static String DATA_CATCH_PHRASE = "data_catch_pharse";
     public static String DATA_BS = "data_bs";
@@ -77,6 +74,7 @@ public class MainActivity extends AppCompatActivity {
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        getSupportActionBar().hide();
 
         listView = (ListView) this.findViewById(R.id.list_item);
 
